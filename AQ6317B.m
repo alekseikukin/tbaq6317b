@@ -1,0 +1,473 @@
+classdef AQ6317B < handle
+    %AQ6317B Summary of this class goes here
+    %   Detailed explanation goes here
+
+    properties
+        Q
+        ID
+        data_num_max
+    end
+
+    methods
+        function obj = AQ6317B(dev_address, varargin)
+            %AQ6317B Construct an instance of this class
+            %   Detailed explanation goes here
+            data_num_max = [];
+            while ~isempty(varargin)
+                switch lower(varargin{1})
+                    case {"data num max", "dnmax"}
+                        data_num_max = varargin{2};
+                    otherwise
+                        errore("AQ6317B - unknown parameter")
+                end
+                varargin(1:2) = [];
+            end
+            obj.Q = visadev(dev_address);
+            obj.ID = wrl(obj,"*IDN?")
+        end
+        function response = id(obj)
+            response = wrl(obj,"*IDN?");
+        end
+        function response = sweep(obj, varargin)
+            % Status Output
+            % STOP 0
+            % SINGLE 1
+            % REPEAT 2
+            % AUTO 3
+            % SEGMENT MEASURE 4
+            % WL CAL 11
+            % OPTICAL ALIGNMENT 12
+            show1 = false;
+            while ~isempty(varargin)
+                switch lower(varargin{1})
+                    case {"show description", "show"}
+                        show1 = varargin{2};
+                    otherwise
+                        errore("sweep: unknown parameter.")
+                end
+                varargin(1:2) = [];
+            end
+            response = str2num(wrl(obj,"SWEEP?"));
+            if show1
+                switch response
+                    case 0
+                        disp('STOP');
+                    case 1
+                        disp('SINGLE');
+                    case 2
+                        disp('REPEAT');
+                    case 3
+                        disp('AUTO');
+                    case 4
+                        disp('SEGMENT MEASURE');
+                    case 11
+                        disp('WL CAL');
+                    case 12
+                        disp('OPTICAL ALIGNMENT');
+                    otherwise
+                        disp('unknown status of sweep');
+                end
+
+            end
+        end
+        function response = auto(obj)
+            %Starts an auto sweep.
+            response = str2num(wrl(obj,"AUTO"));
+        end
+        function response = repeat(obj)
+            %Starts a repeat sweep.
+            response = str2num(wrl(obj,"RPT"));
+        end
+        function response = single(obj)
+            %Starts a single sweep.
+            response = str2num(wrl(obj,"SGL"));
+        end
+        function response = smeas(obj)
+            %Measures according to the set sampling count.
+            response = str2num(wrl(obj,"SMEAS"));
+        end
+        function response = stop(obj)
+            %Stops a sweep.
+            response = str2num(wrl(obj,"STP"));
+        end
+
+
+        function response  = center(obj, param)
+            % Sets the center wavelength (Unit: nm)
+            if nargin == 1
+                response = str2double(wrl(obj,"CTRWL?"));
+            else
+                command = strcat("CTRWL", num2str(param));
+                response = str2double(obj.wrl(command));
+            end
+        end
+        function response  = startwl(obj, param)
+            % Sets the measurement start wavelength. (Unit: nm)
+            command = "STAWL";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = stopwl(obj, param)
+            % Sets the measurement end wavelength. (Unit: nm)
+            command = "STPWL";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+
+        function response  = autocenter(obj, param)
+            % Selects ON or OFF for the peak-center function at each
+            % sweep. PEAKCENTER
+            % ON....*: 1 OFF....*: 0
+            command = "ATCTR";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = span(obj, param)
+            % Selects ON or OFF for the peak-center function at each
+            % sweep. PEAKCENTER
+            % ON....*: 1 OFF....*: 0
+            command = "SPAN";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response = spnwl(obj)
+            %Sets the span according to the spectral width.
+            response = str2num(wrl(obj,"SPN=W"));
+        end
+
+
+
+        function response  = reflevel(obj, param)
+            % Sets the reference level. [in LOG] (Unit: dBm)
+            % ***.*: 90.0 to 20.0 (0.1 step)
+            command = "REFL";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = autoref(obj, param)
+            % Selects ON or OFF for the PEAK→REF LEVEL
+            % function to be executed at each sweep.
+            % ON....*: 1 OFF....*: 0
+            command = "ATREF";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = resolution(obj, param)
+            % Sets the resolution. (Unit: nm)
+            % *.**: 0.01 to 2.0 (1-2-5 steps)
+            command = "RESLN";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+
+        function response = sens(obj, varargin)
+            % Measuring sensitivity
+            % SENS HIGH1 1
+            % SENS HIGH2 2
+            % SENS HIGH3 3
+            % SENS NORM RANG HOLD 4
+            % SENS NORM RANG AUTO 5
+            % SENS MID 6
+            show1 = false;
+            while ~isempty(varargin)
+                switch lower(varargin{1})
+                    case {"show description", "show"}
+                        show1 = varargin{2};
+                    otherwise
+                        errore("sens: unknown parameter.")
+                end
+                varargin(1:2) = [];
+            end
+            response = str2num(wrl(obj,"SENS?"));
+            if show1
+                switch response
+                    case 1
+                        disp('SENS HIGH1');
+                    case 2
+                        disp('SENS HIGH2 ');
+                    case 3
+                        disp('SENS HIGH3 ');
+                    case 4
+                        disp('SENS NORM RANG HOLDE');
+                    case 5
+                        disp('SENS NORM RANG AUTO');
+                    case 6
+                        disp('SENS MID');
+                    otherwise
+                        disp('unknown status of sens');
+                end
+
+            end
+        end
+
+
+        function response = snhd(obj)
+            %             SENS NORM RANGE HOLD
+            response = str2num(wrl(obj,"SNHD"));
+        end
+        function response = snat(obj)
+            %             SENS NORM RANGE AUTO
+            response = str2num(wrl(obj,"SNAT"));
+        end
+        function response = smid(obj)
+            %             SENS MID
+            response = str2num(wrl(obj,"SMID"));
+        end
+        function response = shi1(obj)
+            %             SENS HIGH1
+            response = str2num(wrl(obj,"SHI1"));
+        end
+        function response = shi2(obj)
+            %             SENS HIGH2
+            response = str2num(wrl(obj,"SHI2"));
+        end
+        function response = shi3(obj)
+            %             SENS HIGH3
+            response = str2num(wrl(obj,"SHI3"));
+        end
+
+        function response  = atime(obj, param)
+            % Sets the number of averaging times for measurement.
+            % ****: 1 to 1000 (1 step)
+            command = "AVG";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = samplingpt(obj, param)
+            % Sets the sampling point for measurement.
+            % ****: 11 to 20001 (1 step) 0(auto)
+            command = "SMPL";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response = alignment(obj)
+            % Adjusting optical axis of monochromator optical
+            % system employed on this unit.
+            response = str2num(wrl(obj,"OPALIGN"));
+        end
+
+
+
+        function response = powermeterstatus(obj, varargin)
+            % POWER METER status
+            show1 = false;
+            while ~isempty(varargin)
+                switch lower(varargin{1})
+                    case {"show description", "show"}
+                        show1 = varargin{2};
+                    otherwise
+                        errore("sens: unknown parameter.")
+                end
+                varargin(1:2) = [];
+            end
+            response = str2num(wrl(obj,"PMST?"));
+            if show1
+                switch response
+                    case 1
+                        disp('STOP');
+                    case 2
+                        disp('SINGLE');
+                    case 3
+                        disp('REPEAT');
+                    otherwise
+                        disp('unknown status of sens');
+                end
+
+            end
+        end
+
+
+
+        function response = pmrepeat(obj)
+            %             power meter Sets repeat measurement.
+            response = str2num(wrl(obj,"PMPRT"));
+        end
+
+        function response = pmsingle(obj)
+            %             power meter Sets single measurement.
+            response = str2num(wrl(obj,"PMSGL"));
+        end
+
+        function response = pmstop(obj)
+            %             power meter Stops the power meter function.
+            response = str2num(wrl(obj,"PMSTP"));
+        end
+
+
+        function response  = pmarea(obj, param)
+            %  power meter Sets the measuring range.
+            %             Output
+            % FULL 0
+            % 600 to 1000 nm 2
+            % 1000 to 1750 nm 3
+            command = "AREA";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = pmrelative(obj, param)
+            % Selects absolute value or relative value for display
+            % value.
+            % The relative value is 0 dB at ON.
+            % ON (relative value)...*: 1
+            % OFF (absolute value)...*: 0
+            command = "REL";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+        function response = pmreset(obj)
+            %             power meter Sets the maximum value and minimum value.
+            response = str2num(wrl(obj,"PMRST"));
+        end
+
+
+        function response = init(obj)
+            % Initializes data except program/memory.
+            response = str2num(wrl(obj,"INIT"));
+        end
+
+        function response = reset(obj)
+            % Initializes data except program/memory.
+            response = str2num(wrl(obj,"*RST"));
+        end
+
+        function response = datanum(obj, trace_let)
+            command = strcat("DTNUM", string(trace_let));
+            response = str2double(obj.wrl(command));
+        end
+
+        function response  = activetrace(obj, param)
+            % Active trace selection
+            %             Output
+            % Trace A 0
+            % Trace B 1
+            % Trace C 2
+            command = "ACTV";
+            if nargin == 1
+                command = strcat(command, "?");
+            else
+                command = strcat(command, num2str(param));
+            end
+            response = str2double(obj.wrl(command));
+        end
+
+
+        function response = getdata(obj, type_data, trace_data, ...
+                range_start, range_end)
+            if nargin == 3
+                command = strcat(type_data, "DAT", trace_data);
+            elseif nargin == 5
+                command = strcat(type_data, "DAT", trace_data, "R", num2str(range_start), "-", "R", num2str(range_end));
+            elseif nargin == 1 || nargin == 4
+                error("getdata : not enough input arguments (must be 2 or 4)")
+            else
+                error("getdata : wrong number of input arguments (must be 2 or 4)")
+            end
+            response = wrl(obj, command);
+        end
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        function response = gettrace(obj, trace_data, varargin)
+            range = true;
+            while ~isempty(varargin)
+                switch lower(varargin{1})
+                    case "range"
+                        range = varargin{2};
+                    otherwise
+                        errore("gettrace: unknown parameter")
+                end
+                varargin(1:2) = [];
+            end
+
+            if isempty(obj.data_num_max) || ~range
+                [num_pointsW, dataW] = DataConverterAQ6317B( ...
+                    obj.getdata("W", trace_data));
+                [num_pointsL, dataL] = DataConverterAQ6317B( ...
+                    obj.getdata("L", trace_data));
+                response = CheckDataAQ6317B(obj, num_pointsW, dataW, num_pointsL, dataL);
+            else
+                real_size = obj.datanum(trace_data);
+                if obj.data_num_max > real_size
+                    obj.gettrace(trace_data, "range", false);
+                else
+                    response=zeros(real_size, 2);
+                    list_of_range = (0:obj.data_num_max:real_size);
+                    if list_of_range(end)< real_size
+                        list_of_range(end + 1) = real_size;
+                    end
+                    for ii = 1:length(list_of_range) - 1
+                        [num_pointsW, dataW] = DataConverterAQ6317B( ...
+                            obj.getdata("W", trace_data, list_of_range(ii)+1, list_of_range(ii+1)));
+                        [num_pointsL, dataL] = DataConverterAQ6317B( ...
+                            obj.getdata("L", trace_data,  list_of_range(ii)+1, list_of_range(ii+1)));
+                        response(list_of_range(ii)+1: list_of_range(ii+1),:) = ...
+                            CheckDataAQ6317B(obj, num_pointsW, dataW, num_pointsL, dataL);
+                    end
+                end
+            end
+        end
+
+
+        function response = wrl(obj,command)
+            disp(command)
+            response = writeread(obj.Q, upper(command));
+        end
+    end
+end
+
