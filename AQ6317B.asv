@@ -1,11 +1,13 @@
 classdef AQ6317B < handle
-    %AQ6317B Summary of this class goes here
+    %AQ6317B control of AQ6317B optical spe
     %   Detailed explanation goes here
 
-    properties
-        Q
-        ID
-        data_num_max
+    properties (Access = public)
+        data_num_max % maximum number of points that can be requested in single request
+    end
+    properties (Access = protected)
+        Q % opened connection
+        ID % device ID
     end
 
     methods
@@ -436,33 +438,28 @@ classdef AQ6317B < handle
             end
 
             if isempty(obj.data_num_max) || ~range
-                disp("HERE")
                 [num_pointsW, dataW] = DataConverterAQ6317B( ...
                     obj.getdata("W", trace_data));
                 [num_pointsL, dataL] = DataConverterAQ6317B( ...
                     obj.getdata("L", trace_data));
-                response = CheckDataAQ6317B(num_pointsW, dataW, num_pointsL, dataL);
+                response = CheckDataAQ6317B(obj, num_pointsW, dataW, num_pointsL, dataL);
             else
-                disp("THERE")
                 real_size = obj.datanum(trace_data);
                 if obj.data_num_max > real_size
                     obj.gettrace(trace_data, "range", false);
                 else
                     response=zeros(real_size, 2);
-                    disp(real_size)
-                    list_of_range = (1:obj.data_num_max:real_size);
+                    list_of_range = (0:obj.data_num_max:real_size);
                     if list_of_range(end)< real_size
                         list_of_range(end + 1) = real_size;
                     end
-                    disp(list_of_range)
-                    for ii = length(list_of_range) - 1;
-                        disp(ii)
+                    for ii = 1:length(list_of_range) - 1
                         [num_pointsW, dataW] = DataConverterAQ6317B( ...
-                            obj.getdata("W", trace_data, list_of_range(ii)-1, list_of_range(ii+1)));
+                            obj.getdata("W", trace_data, list_of_range(ii)+1, list_of_range(ii+1)));
                         [num_pointsL, dataL] = DataConverterAQ6317B( ...
-                            obj.getdata("L", trace_data, ii - obj.data_num_max + 1, ii));
-                        response(ii - obj.data_num_max + 1: ii,:) = ...
-                            CheckDataAQ6317B(num_pointsW, dataW, num_pointsL, dataL);
+                            obj.getdata("L", trace_data,  list_of_range(ii)+1, list_of_range(ii+1)));
+                        response(list_of_range(ii)+1: list_of_range(ii+1),:) = ...
+                            CheckDataAQ6317B(obj, num_pointsW, dataW, num_pointsL, dataL);
                     end
                 end
             end

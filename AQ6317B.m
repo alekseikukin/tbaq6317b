@@ -1,17 +1,18 @@
 classdef AQ6317B < handle
-    %AQ6317B Summary of this class goes here
-    %   Detailed explanation goes here
+    %AQ6317B control of AQ6317B optical spectrum analizer
+    %   tollbox for control AQ6317B OSA
 
-    properties
-        Q
-        ID
-        data_num_max
+    properties (Access = public)
+        data_num_max % maximum number of points that can be requested in single request
+    end
+    properties (Access = protected)
+        Q % opened connection
+        ID % device ID
     end
 
     methods
         function obj = AQ6317B(dev_address, varargin)
-            %AQ6317B Construct an instance of this class
-            %   Detailed explanation goes here
+            %AQ6317B initialize
             data_num_max = [];
             while ~isempty(varargin)
                 switch lower(varargin{1})
